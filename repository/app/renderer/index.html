@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>Cartesio</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'self' blob: data:">
+<link rel="stylesheet" href="css/app.css"></head><body>
+<nav id="menubar"><button data-m="file">File</button><button data-m="plug">Gestione plugin</button><button data-m="set">Impostazioni</button></nav>
+<header id="top">
+  <div class="logo"><svg width="26" height="16" viewBox="0 0 26 16"><path d="M1 8 C5 -2 8 -2 13 8 S21 18 25 8" fill="none" stroke="#141414" stroke-width="2"/></svg>CARTESIO</div>
+ <div class="seg"><button id="mPat">PAT</button><button id="mSong">SONG</button></div>
+ <button id="play" title="Play (Spazio)">&#9654;</button><button id="stop" title="Stop">&#9632;</button>
+ <div id="time">1:1:1</div>
+ <div class="grp"><span class="lbl">bpm(b) =</span><input id="bpm" spellcheck="false" title="Il tempo: unica cosa che decide quanto dura un beat"><span id="bpmv"></span></div>
+ <div class="grp"><button id="prevpat">&#8249;</button><button id="patsel" title="Apri il channel rack"></button><button id="nextpat">&#8250;</button><button id="patplus" title="Nuovo pattern">+</button><button id="rackBtn" hidden title="Mostra/nascondi channel rack">Rack</button><button id="mixBtn" title="Mostra/nascondi il mixer">Mixer</button><button id="metroBtn" title="Metronomo"><svg width="12" height="14" viewBox="0 0 12 14" style="vertical-align:-2px;margin-right:5px"><path d="M4 1h4l3 12H1z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 9l4-6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Metronomo</button><button id="plugBtn" hidden title="Gestione plugin">Plugin</button></div>
+ <div class="grp"><span class="lbl">Master</span><input id="master" type="range" min="0" max="1" step="0.01"></div>
+ <div class="grp"><canvas id="scope"></canvas><canvas id="xy" title="Lissajous: sinistra contro destra"></canvas></div>
+ <div class="sp"></div>
+ <button id="new" hidden>Nuovo</button><button id="demo" hidden>Demo</button><button id="open" hidden>Apri</button><button id="save" hidden>Salva</button><button id="exp" hidden>Esporta WAV</button>
+ <input id="file" type="file" accept=".cartesio,.curva,.json" hidden>
+</header>
+<nav id="side">
+ <div class="sh"><span class="lbl">Pattern</span><button id="addpat" title="Nuovo pattern">+</button></div>
+ <div id="pats"></div>
+ <div class="sidehint">Clic su un pattern: si apre il suo blocco.<br>Nel blocco, <b>+</b> aggiunge un canale: a sinistra il suono, a destra la funzione che compone.</div>
+</nav>
+<main id="main">
+ <div class="ph"><span class="lbl">Playlist · Arrangiamento</span>
+  <div class="seg"><button id="tDraw" class="on" title="Clic: piazza il pattern selezionato · trascina: sposta · bordo destro: allunga · doppio clic: apri">&#9998; Disegna</button><button id="tCut" title="Clic su una clip: la divide in due">&#9986; Taglia</button></div>
+  <span class="lbl">Snap</span><select id="snap"><option value="4">Battuta</option><option value="1" selected>Beat</option><option value="0.25">1/4</option></select>
+  <span class="lbl">Zoom</span><input id="zoom" type="range" min="6" max="80" value="22">
+ </div>
+ <div id="plwrap"><div id="plin"><div id="corner"></div><canvas id="ruler"></canvas><canvas id="trk"></canvas><div id="plcell"><div id="plview"><canvas id="pl"></canvas><canvas id="plo"></canvas></div></div></div></div>
+
+ <div class="win" id="wRack" style="left:36px;top:56px;width:620px">
+  <div class="wt"><span class="wtt">Channel rack</span><span class="wsub" id="rackPat"></span><button class="wx">&times;</button></div>
+  <div class="wb">
+   <div class="rh"><input id="pname" spellcheck="false"><span class="lbl">Battute</span><input id="pbars" type="number" min="1" max="64"><div class="sp"></div><button id="clonepat">Clona</button><button id="delpat">Elimina</button></div>
+   <div id="rows"></div>
+   <button id="addch" title="Aggiungi un canale">+</button>
+  </div>
+ </div>
+
+ <div class="win" id="wComp" hidden style="left:140px;top:24px;width:760px">
+  <div class="wt"><span class="wtt">Composizione</span><span class="wsub" id="compName"></span><button class="wx">&times;</button></div>
+  <div class="wb">
+   <canvas id="cplane"></canvas>
+   <textarea id="ctext" spellcheck="false" placeholder="y = …"></textarea>
+   <div class="chips" id="csym"></div>
+   <div class="crow"><span class="lbl">y in</span><select id="cunit"><option value="semitoni">semitoni</option><option value="ottave">ottave</option><option value="hz">Hz</option></select>
+    <span class="lbl">y = 0 è</span><select id="croot"></select><span id="cerr" class="err"></span><div class="sp"></div><button id="impMidi" title="Converte un file MIDI in una funzione (o trascinalo qui)">&#10515; Importa MIDI…</button><button id="cplay" title="Ctrl+Invio">&#9654; Suona pattern</button><input id="fmidi" type="file" accept=".mid,.midi" hidden></div>
+   <details class="guide"><summary>Guida al linguaggio</summary><div class="hint">
+   <b>x</b> = beat del pattern (quanto dura un beat lo decide solo <i>bpm(b)</i>) · <b>y</b> = altezza · dove y non è definita c'è silenzio, quando torna definita la nota riparte · una lista <b>[0, 4, 7]</b> suona un accordo.<br>
+   Puoi scrivere come preferisci, anche incollando da Desmos o LaTeX:<br>
+   <code>y = {⌊x⌋ mod 4 = 3: K(2x mod 1), x mod 1 &lt; 1/2: K(x mod 1), −1.25}</code><br>
+   <code>y = K(2x mod 1) if ⌊x⌋ mod 4 = 3 ⏎ K(x mod 1) if x mod 1 &lt; ½ ⏎ −1.25 otherwise</code><br>
+   <code>y = \begin{cases} … &amp; \text{if } … \\ … &amp; \text{otherwise} \end{cases}</code> · <code>a if c else b</code> · <code>c ? a : b</code><br>
+   Definizioni su righe separate: <code>K(d) = 4.7e^{-12d} − 2.2</code>, <code>a = 3x</code> · moltiplicazione implicita: <code>2x</code>, <code>xsin x</code>, <code>(x+1)(x−1)</code><br>
+   Operatori: + − · × / ÷ ^ ** mod % ! |x| √ ² ³ ½ ⌊⌋ ⌈⌉ &lt; ≤ = ≠ ≥ &gt;, catene <code>0 &lt; x &lt; 2</code>, and or not, restrizioni <code>x{x &lt; 2}</code><br>
+   Somme e prodotti: <code>Σ_{k=1}^{10} sin(kx)/k</code>, <code>\sum_{k=1}^{10}</code>, <code>sum(k, 1, 10, …)</code>, <code>prod(…)</code> · liste <code>[1...8]</code>, <code>L[2]</code><br>
+   Funzioni: sin cos tan sec csc cot arcsin… sinh… exp ln log log_2 sqrt cbrt root(n,x) abs sgn floor ceil round frac mod min max gcd lcm nCr nPr gamma beta erf besselj sinc sigmoid lerp mix map wrap smoothstep easein easeout clamp isprime prime fib chaos · ritmo: seq every pulse gate euclid(i,k,n,rot) phasor lfo chance bar beatin rnd · altezze: mtof ftom semi scale quant major minor penta minpenta blues dorian phrygian lydian mixolydian locrian harmonic melodic whole chromatic · accordi: triad chmaj chmin chdim chaug sus2 sus4 chmaj7 chmin7 chdom7 power octaves · suono: sq saw tri pwm fm am harm odd supersaw fold clip crush quantize noise · inviluppi: decay ad perc adsr swell · bit: band bor bxor shl shr bit · liste: range rev sort rotate repeat shuffle first last count median std · costanti π τ e φ ∞
+  </div></details>
+  </div>
+ </div>
+
+ <div class="win" id="wSound" hidden style="left:520px;top:40px;width:400px">
+  <div class="wt"><span class="wtt">Suono</span><span class="wsub" id="sName"></span><button class="wx">&times;</button></div>
+  <div class="wb">
+   <input id="sname" spellcheck="false">
+   <canvas id="splot"></canvas>
+   <textarea id="stext" spellcheck="false" placeholder="y = sin(x)"></textarea>
+   <div id="serr" class="err"></div>
+   <div id="knobs"></div>
+   <div class="chips" id="chips"></div>
+   <div class="crow"><button id="sprev">&#9654; Ascolta</button><div class="sp"></div><button id="impAudio" title="Analizza un file audio e lo trasforma in una funzione (o trascinalo qui)">&#10515; Clona da audio…</button></div><input id="faudio" type="file" accept="audio/*,.wav,.mp3,.ogg,.flac,.aif,.aiff,.m4a" hidden>
+   <div class="hint">x = fase dell'onda (0 → 2π) · t = secondi dall'inizio della nota · stesso linguaggio della composizione (Desmos, LaTeX, if/otherwise, Σ…)</div>
+  </div>
+ </div>
+ <div class="win" id="wMix" hidden style="left:16px;top:16px;width:1080px">
+  <div class="wt"><span class="wtt">Mixer</span><span class="wsub" id="mixSub"></span><button class="wx">&times;</button></div>
+  <div class="wb mixb">
+   <div id="strips"></div>
+   <div id="fxpanel">
+    <input id="insname" spellcheck="false">
+    <div id="slots"></div>
+    <select id="addfx" hidden><option value="">+ aggiungi effetto…</option></select><button id="addfxBtn" class="on">+ Aggiungi effetto</button><div id="fxPick" hidden></div>
+    <div id="fxedit"></div>
+   </div>
+  </div>
+ </div>
+ <div class="win" id="wFx" hidden style="left:300px;top:60px;width:470px">
+  <div class="wt"><span class="wtt" id="fxName"></span><span class="wsub" id="fxIns"></span><button class="wx">&times;</button></div>
+  <div class="wb"><canvas id="fxDisp"></canvas><div id="knobs2"></div><div class="hint">Trascina le manopole su e giù · doppio clic: valore iniziale · clic sul numero: scrivi una funzione di b (ƒ)</div></div>
+ </div>
+ <div class="win" id="wPlug" hidden style="left:200px;top:40px;width:620px">
+  <div class="wt"><span class="wtt">Gestione plugin</span><span class="wsub">effetti del PC (VST3 · VST2 · CLAP)</span><button class="wx">&times;</button></div>
+  <div class="wb"><div class="hint" id="hostStat">Ponte VST3: avvio in corso…</div>
+   <div class="crow"><span class="lbl">Cartelle dei plugin</span><div class="sp"></div><button id="plugAddDir">+ Cartella…</button><button id="plugScan" class="on">Cerca plugin</button></div>
+   <div id="plugDirs"></div>
+   <div class="crow"><input id="plugQ" placeholder="cerca…" spellcheck="false"><span id="plugStat" class="hint"></span></div><div id="plugList"></div></div>
+ </div>
+</main>
+<footer id="foot"><span id="liveStat" class="live"></span><span>Spazio play/stop · Ctrl+Invio suona il pattern dalla composizione · Esc chiude la finestra · Destro elimina una clip · Ctrl+rotella zoom</span><span>sin cos tan exp log abs floor ⌊ ⌋ mod seq every euclid rnd sq saw tri noise π e</span></footer>
+<div id="toast"></div>
+<div id="conv" hidden><div class="cbox">
+ <div class="ctop"><span class="lbl">Trasformazione in matematica</span><b id="convName"></b></div>
+ <canvas id="convCv"></canvas>
+ <div id="convStep"></div><div id="convFormula"></div>
+ <div class="crow2"><span id="convStat"></span><div class="sp"></div><button id="convGo" class="on" hidden>Inserisci nell'arrangiamento</button></div>
+</div></div>
+<div id="gfile" hidden><svg width="18" height="22" viewBox="0 0 18 22"><path d="M1 1h10l6 6v14H1z" fill="#fff" stroke="#141414"/><path d="M11 1v6h6" fill="none" stroke="#141414"/><path d="M4 15c1.5-4 2.5-4 4 0s2.5 4 4 0" fill="none" stroke="#141414" stroke-width="1.2"/></svg><span>audio.wav</span></div>
+<div id="modal" hidden><div class="mbox"><div id="mtext"></div><div class="mbtn"><button id="mno">Annulla</button><button id="myes" class="on">OK</button></div></div></div>
+<script src="js/engine.js"></script>
+
+<script src="js/languages.js"></script><script src="js/i18n.js"></script>
+<script src="js/app.js"></script>
+<script src="vendor/lame.min.js"></script><script src="js/ui.js"></script></body></html>

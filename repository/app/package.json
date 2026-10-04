@@ -1,0 +1,9 @@
+{
+  "name": "cartesio",
+  "productName": "Cartesio",
+  "version": "3.13.0",
+  "author": "Yuri",
+  "description": "DAW in cui la musica si scrive con funzioni matematiche",
+  "main": "main.js",
+  "license": "MIT"
+}

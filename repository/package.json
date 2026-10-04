@@ -1,0 +1,44 @@
+{
+  "name": "cartesio-workspace",
+  "private": true,
+  "version": "3.13.0",
+  "description": "Cartesio — DAW a funzioni matematiche (sorgenti)",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron app",
+    "build:host": "bash native/host/build.sh",
+    "dist": "npm run build:host && electron-builder --win --x64"
+  },
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "app.cartesio.daw",
+    "productName": "Cartesio",
+    "copyright": "© 2026 Yuri",
+    "directories": {
+      "app": "app",
+      "output": "dist"
+    },
+    "extraFiles": [
+      {
+        "from": "native/host/bin",
+        "to": ".",
+        "filter": [
+          "*.exe"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
